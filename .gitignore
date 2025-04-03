@@ -1,0 +1,3 @@
+*/__pycache__
+logs/*
+configs/vm_config.yaml
