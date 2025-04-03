@@ -60,7 +60,6 @@ class ProxmoxVMManager:
                 password=proxmox_config['password'],
                 verify_ssl=proxmox_config['verify_ssl']
             )
-            return True
         except Exception as e:
             self.logger.error(f"Failed to connect to Proxmox: {e}")
             sys.exit(1)
