@@ -22,13 +22,13 @@ vms:
     ostype: "l26"
     scsihw: "virtio-scsi-single"
     net0: "virtio,bridge=vmbr0,firewall=1"
-    scsi0: "local-lvm:0,import-from=iso/openwrt.img,format=raw"
+    scsi0: "local-lvm:0,import-from=/var/lib/vz/template/iso/openwrt.img"
     boot_order:  # 新增启动顺序配置
       - scsi0    # 首先从硬盘启动
       - net0     # 最后是网络启动
     tags: "network,router"
 
-  - id: 100
+  - id: 101
     cloud_init: false  # 明确标记不使用 cloud-init
     name: "Ikuai"
     memory: 4096
@@ -38,31 +38,9 @@ vms:
     scsihw: "virtio-scsi-single"
     net0: "virtio,bridge=vmbr0,firewall=1"
     scsi0: "local-lvm:8,format=raw"
-    ide2: "local:iso/ikuai.iso,media=cdrom"
+    ide2: "local:/var/lib/vz/template/iso/ikuai.iso,media=cdrom"
     boot_order:  # 新增启动顺序配置
+      - ide2
       - scsi0    # 首先从硬盘启动
       - net0     # 最后是网络启动
     tags: "network,router"
-
-  # Ubuntu 服务器配置（使用 cloud-init）
-  - id: 102
-    cloud_init: true  # 明确标记使用 cloud-init
-    name: "db-server"
-    memory: 8192
-    cores: 4
-    sockets: 1
-    ostype: "l26"
-    scsihw: "virtio-scsi-pci"
-    scsi0: "local-lvm:64"
-    net0: "model=virtio,bridge=vmbr0"
-    ide2: "local:iso/ubuntu-22.04-server-cloudimg-amd64.img,media=cdrom"
-    boot: "order=scsi0"
-    cpu: "host"
-    acpi: 1
-    tags: "db,prod"
-    # cloud-init 专用配置
-    ci:
-      user: "ubuntu"
-      password: "your_password"
-      ssh_key: "ssh-rsa AAAAB... your_key"
-      ip_config: "ip=192.168.0.102/24,gw=192.168.0.1"
