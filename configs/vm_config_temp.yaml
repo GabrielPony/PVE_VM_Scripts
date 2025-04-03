@@ -17,15 +17,28 @@ vms:
     cloud_init: false  # 明确标记不使用 cloud-init
     name: "OpenWrt"
     memory: 1024
+    cores: 2
+    sockets: 1
+    ostype: "l26"
+    scsihw: "virtio-scsi-single"
+    net0: "virtio,bridge=vmbr0,firewall=1"
+    scsi0: "local-lvm:0,import-from=iso/openwrt.img,format=raw"
+    boot_order:  # 新增启动顺序配置
+      - scsi0    # 首先从硬盘启动
+      - net0     # 最后是网络启动
+    tags: "network,router"
+
+  - id: 100
+    cloud_init: false  # 明确标记不使用 cloud-init
+    name: "Ikuai"
+    memory: 4096
     cores: 4
     sockets: 1
     ostype: "l26"
     scsihw: "virtio-scsi-single"
     net0: "virtio,bridge=vmbr0,firewall=1"
-    disk:
-      import_img: "/var/lib/vz/template/iso/openwrt.img"
-      storage: "local-lvm"
-      bootable: true
+    scsi0: "local-lvm:8,format=raw"
+    ide2: "local:iso/ikuai.iso,media=cdrom"
     boot_order:  # 新增启动顺序配置
       - scsi0    # 首先从硬盘启动
       - net0     # 最后是网络启动

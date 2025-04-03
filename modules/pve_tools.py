@@ -11,7 +11,6 @@ from pprint import pformat
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-
 # Disable SSL warnings
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -78,7 +77,7 @@ class ProxmoxVMManager:
             time.sleep(1)
         self.logger.error("Task timeout")
         return False
-        
+
     def _validate_vm_config(self, vm_config: dict) -> bool:
         """Validate VM configuration"""
         # Check if VM ID already exists
@@ -94,71 +93,7 @@ class ProxmoxVMManager:
             self.logger.error(f"Missing required parameters: {missing}")
             return False
 
-        # Validate image file existence
-        if 'disk' in vm_config and 'import_img' in vm_config['disk']:
-            img_path = Path(vm_config['disk']['import_img'])
-            if not img_path.exists():
-                self.logger.error(f"Image file does not exist: {img_path}")
-                return False
-
         return True
-
-    def _import_disk_image(self, vmid: int, image_path: str, storage: str) -> Optional[dict]:
-        """Import disk image"""
-        try:
-            self.logger.info(f"Starting image import: {image_path}")
-            result = self.proxmox.nodes(self.node).qemu(vmid).importdisk.create(
-                filename=image_path,
-                storage=storage
-            )
-            
-            if not self._wait_for_task(result):
-                return None
-
-            # Get imported volume identifier
-            vm_config = self.proxmox.nodes(self.node).qemu(vmid).config.get()
-            for key, value in vm_config.items():
-                if key.startswith('unused'):
-                    return {'scsi0': value}
-
-            return None
-        except Exception as e:
-            self.logger.error(f"Failed to import image: {e}")
-            return None
-
-    def _prepare_disk_params(self, vm_config: dict) -> dict:
-        """Prepare disk configuration parameters"""
-        disk_config = vm_config['disk']
-        params = {}
-
-        if 'import_img' in disk_config:
-            # Import image
-            result = self._import_disk_image(
-                vm_config['id'],
-                disk_config['import_img'],
-                disk_config.get('storage', self.config['storage']['name'])
-            )
-            if result:
-                params.update(result)
-        elif 'scsi0' in disk_config:
-            # Direct disk configuration
-            params['scsi0'] = disk_config['scsi0']
-
-        return params
-    
-    def _prepare_cloud_init_params(self, ci_config: dict) -> dict:
-        """Prepare cloud-init configuration parameters"""
-        ci_mapping = {
-            'user': 'ciuser',
-            'password': 'cipassword',
-            'ssh_key': 'sshkeys',
-            'ip_config': 'ipconfig0'
-        }
-        return {
-            ci_mapping[k]: v 
-            for k, v in ci_config.items() 
-            if k in ci_mapping
-        }
 
     def _prepare_create_params(self, vm_config: dict) -> dict:
         """Prepare VM creation parameters"""
@@ -167,34 +102,31 @@ class ProxmoxVMManager:
             'name': vm_config['name'],
             'memory': vm_config['memory'],
             'cores': vm_config['cores'],
-            'net0': vm_config.get('net0', 'model=virtio,bridge=vmbr0')
         }
 
         # Add optional basic parameters
         optional_params = {
             'sockets', 'ostype', 'scsihw', 'cpu', 'acpi', 'ide2',
-            'scsi0', 'net0', 'boot'
+            'scsi0', 'net0'
         }
-        create_params.update({
-            k: v for k, v in vm_config.items() 
-            if k in optional_params
-        })
+        for param in optional_params:
+            if param in vm_config:
+                create_params[param] = vm_config[param]
 
         # Handle boot order
         if 'boot_order' in vm_config:
             boot_order = ','.join(vm_config['boot_order'])
             create_params['boot'] = f"order={boot_order}"
 
-        # Handle disk configuration
-        if 'disk' in vm_config:
-            disk_params = self._prepare_disk_params(vm_config)
-            if disk_params:
-                create_params.update(disk_params)
-
         # Handle cloud-init configuration
         if vm_config.get('cloud_init') and 'ci' in vm_config:
-            ci_params = self._prepare_cloud_init_params(vm_config['ci'])
-            create_params.update(ci_params)
+            ci_params = {
+                'ciuser': vm_config['ci'].get('user'),
+                'cipassword': vm_config['ci'].get('password'),
+                'sshkeys': vm_config['ci'].get('ssh_key'),
+                'ipconfig0': vm_config['ci'].get('ip_config')
+            }
+            create_params.update({k: v for k, v in ci_params.items() if v is not None})
 
         return create_params
 
@@ -215,18 +147,45 @@ class ProxmoxVMManager:
             self.logger.error(f"Failed to apply post-creation configuration: {e}")
             return False
 
+
+    # def wait_for_vm_ready(self, vmid: int, timeout: int = 1800) -> bool:
+    #     """Wait for VM installation to complete"""
+    #     start_time = time.time()
+    #     while time.time() - start_time < timeout:
+    #         try:
+    #             status = self.proxmox.nodes(self.node).qemu(vmid).status.current.get()
+    #             if status['status'] == 'stopped':
+    #                 self.logger.info(f"VM {vmid} installation completed")
+    #                 return True
+    #             time.sleep(10)
+    #         except Exception as e:
+    #             self.logger.error(f"Error checking VM status: {e}")
+    #             return False
+    #     self.logger.error(f"Timeout waiting for VM {vmid} installation")
+    #     return False
+
+    # def update_boot_order(self, vmid: int, boot_order: List[str]) -> bool:
+    #     """Update VM boot order"""
+    #     try:
+    #         order = ','.join(boot_order)
+    #         self.proxmox.nodes(self.node).qemu(vmid).config.put(
+    #             boot=f"order={order}"
+    #         )
+    #         return True
+    #     except Exception as e:
+    #         self.logger.error(f"Failed to update boot order: {e}")
+    #         return False
+
     def create_vm(self, vm_config: dict) -> bool:
         """Create virtual machine"""
         try:
             # Validate VM configuration
             if not self._validate_vm_config(vm_config):
                 return False
-            self.logger.info(f"Prepare PVE VM parameters\n")
+
             # Prepare creation parameters
             create_params = self._prepare_create_params(vm_config)
             self.logger.info(f"VM creation parameters:\n{pformat(create_params)}")
-            if not create_params:
-                return False
 
             # Create VM
             self.logger.info(f"Starting VM creation: {vm_config['name']} (ID: {vm_config['id']})")
