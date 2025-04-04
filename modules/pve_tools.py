@@ -107,7 +107,7 @@ class ProxmoxVMManager:
         # Add optional basic parameters
         optional_params = {
             'sockets', 'ostype', 'scsihw', 'cpu', 'acpi', 'ide2',
-            'scsi0', 'net0'
+            'scsi0', 'net0', 'net1'
         }
         for param in optional_params:
             if param in vm_config:

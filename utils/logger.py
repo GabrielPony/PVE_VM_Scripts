@@ -1,5 +1,6 @@
 import logging
 import colorlog
+from pathlib import Path
 from typing import Optional
 
 # Configure logging

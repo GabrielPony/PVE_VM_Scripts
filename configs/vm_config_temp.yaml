@@ -6,6 +6,13 @@ proxmox:
   node: "pve"
   verify_ssl: false  # Disable SSL verification for self-signed certificates
 
+sshcfg:
+  host: "192.168.7.58"
+  user: "root"
+  password: "Gcb990217!"
+  local_image: "./images"
+  remote_image: "/var/lib/vz/template/iso/"
+
 # Storage Configuration
 storage:
   name: "local-lvm"  # Name of the storage pool
@@ -13,8 +20,28 @@ storage:
 
 # Virtual Machines Configuration List
 vms:
-  # OpenWrt Router VM
+  # iKuai Router VM
   - id: 100
+    cloud_init: false  # Explicitly disable cloud-init
+    name: "Ikuai"
+    memory: 4096      # 4GB RAM
+    cores: 4          # 4 CPU cores
+    sockets: 1        # Single CPU socket
+    ostype: "l26"     # OS type: Linux 2.6/3.x/4.x Kernel
+    scsihw: "virtio-scsi-single"  # SCSI controller type
+    # Network configuration: virtio driver, bridge vmbr0, firewall enabled
+    net0: "virtio,bridge=vmbr0,firewall=1"
+    net1: "virtio,bridge=vmbr1,firewall=1"
+    # Main disk: 8GB raw format
+    scsi0: "local-lvm:8,format=raw"
+    # CD-ROM drive with installation ISO
+    ide2: "local:iso/ikuai.iso,media=cdrom"
+    # Boot order: try CD-ROM first, then SCSI disk, then network
+    boot: order=ide2,scsi0,net0 
+    tags: "network,router"  # VM tags for organization
+
+  # OpenWrt Router VM
+  - id: 101
     cloud_init: false  # Explicitly disable cloud-init
     name: "OpenWrt"
     memory: 1024      # RAM in MB
@@ -28,23 +55,4 @@ vms:
     scsi0: "local-lvm:0,import-from=/var/lib/vz/template/iso/openwrt.img"
     # Boot order: try SCSI disk first, then network
     boot: order=scsi0,net0 
-    tags: "network,router"  # VM tags for organization
-
-  # iKuai Router VM
-  - id: 101
-    cloud_init: false  # Explicitly disable cloud-init
-    name: "Ikuai"
-    memory: 4096      # 4GB RAM
-    cores: 4          # 4 CPU cores
-    sockets: 1        # Single CPU socket
-    ostype: "l26"     # OS type: Linux 2.6/3.x/4.x Kernel
-    scsihw: "virtio-scsi-single"  # SCSI controller type
-    # Network configuration: virtio driver, bridge vmbr0, firewall enabled
-    net0: "virtio,bridge=vmbr0,firewall=1"
-    # Main disk: 8GB raw format
-    scsi0: "local-lvm:8,format=raw"
-    # CD-ROM drive with installation ISO
-    ide2: "local:/var/lib/vz/template/iso/ikuai.iso,media=cdrom"
-    # Boot order: try CD-ROM first, then SCSI disk, then network
-    boot: order=ide2,scsi0,net0 
     tags: "network,router"  # VM tags for organization
