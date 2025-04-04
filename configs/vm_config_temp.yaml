@@ -1,15 +1,15 @@
 # Proxmox Server Configuration
 proxmox:
-  host: "192.168.7.58"
+  host: "192.168.x.xx"
   user: "root@pam"
-  password: "Gcb990217!"
+  password: "xxx"
   node: "pve"
   verify_ssl: false  # Disable SSL verification for self-signed certificates
 
 sshcfg:
-  host: "192.168.7.58"
+  host: "192.168.x.xx"
   user: "root"
-  password: "Gcb990217!"
+  password: "xxx"
   local_image: "./images"
   remote_image: "/var/lib/vz/template/iso/"
 
