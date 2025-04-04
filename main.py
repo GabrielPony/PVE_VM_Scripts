@@ -6,35 +6,46 @@ from modules.image_manager import ImageManager
 
 logger = Logger.get_logger()
 def push_image(config_path: str):
-    """
-    Push images to remote server using configuration from specified path
-    
-    Args:
-        config_path: Path to YAML configuration file
-    """
     try:
-        # 从YAML文件创建实例
         manager = ImageManager.from_yaml(config_path)
         
-        # 使用上下文管理器
         with manager:
-            # 列出本地和远程镜像
             local_images = manager.list_local_images()
             remote_images = manager.list_remote_images()
-            logger.info(f"Local images: {local_images}")  # 使用 f-string
-            logger.info(f"Remote images: {remote_images}")  # 使用 f-string
+            logger.info(f"Local images: {local_images}")
+            logger.info(f"Remote images: {remote_images}")
             
-            # 上传镜像
-            if local_images:
-                def show_progress(percentage):
-                    logger.info(f"Upload progress: {percentage:.2f}%")
-                    
-                manager.upload_image(local_images[0], callback=show_progress)
-            else:
-                logger.warning("No local images found to upload")
+            new_images = [img for img in local_images if img not in remote_images]
             
+            if not new_images:
+                logger.info("No new images to upload")
+                return
+                
+            logger.info(f"Found {len(new_images)} new images to upload")
+            
+            BAR_WIDTH = 50
+            last_percentage = -1
+            GREEN = '\033[32m'
+            RESET = '\033[0m'
+            
+            def show_progress(percentage):
+                nonlocal last_percentage
+                current_percentage = int(percentage)
+                if current_percentage != last_percentage:
+                    filled = int(BAR_WIDTH * percentage / 100)
+                    bar = '#' * filled + '_' * (BAR_WIDTH - filled)
+                    print(f"\r{GREEN}Upload progress: [{bar}] {percentage:.1f}%{RESET}", end='', flush=True)
+                    if percentage >= 100:
+                        print()
+                    last_percentage = current_percentage
+
+            for i, image in enumerate(new_images, 1):
+                logger.info(f"Uploading image {i}/{len(new_images)}: {image}")
+                manager.upload_image(image, callback=show_progress)
+                
     except Exception as e:
         logger.error(f"Error: {str(e)}")
+
 
 
 def main():
@@ -55,7 +66,6 @@ def main():
     logger.info(f"Configuration file loaded: {config_path}")
     logger.info(f"Number of VMs to create: {len(vm_manager.config['vms'])}")
 
-    logger.info(f"Push image to PVE\n")
     push_image(config_path)
 
     # # Confirm whether to continue

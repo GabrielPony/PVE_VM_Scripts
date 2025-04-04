@@ -21,7 +21,7 @@ storage:
 # Virtual Machines Configuration List
 vms:
   # iKuai Router VM
-  - id: 100
+  - id: 101
     cloud_init: false  # Explicitly disable cloud-init
     name: "Ikuai"
     memory: 4096      # 4GB RAM
@@ -41,7 +41,7 @@ vms:
     tags: "network,router"  # VM tags for organization
 
   # OpenWrt Router VM
-  - id: 101
+  - id: 102
     cloud_init: false  # Explicitly disable cloud-init
     name: "OpenWrt"
     memory: 1024      # RAM in MB

@@ -4,4 +4,3 @@ PyYAML>=6.0.1
 urllib3>=2.0.7
 colorlog
 pformat
-paramiko
