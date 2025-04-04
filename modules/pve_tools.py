@@ -115,8 +115,7 @@ class ProxmoxVMManager:
 
         # Handle boot order
         if 'boot_order' in vm_config:
-            boot_order = ','.join(vm_config['boot_order'])
-            create_params['boot'] = f"order={boot_order}"
+            create_params['boot'] = f"order={','.join(vm_config['boot_order'])}"
 
         # Handle cloud-init configuration
         if vm_config.get('cloud_init') and 'ci' in vm_config:

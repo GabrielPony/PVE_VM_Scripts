@@ -19,6 +19,15 @@ class Logger:
 
     def _setup_logger(self):
         """Setup colored logging"""
+        # Create logs directory if it doesn't exist
+        try:
+            log_dir = Path('./logs')
+            log_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"Failed to create logs directory: {e}")
+            raise
+
+        # Rest of your original code remains the same
         # Create logger
         self._logger = logging.getLogger('ProxmoxManager')
         self._logger.setLevel(logging.INFO)
@@ -64,6 +73,7 @@ class Logger:
         # Add handlers
         self._logger.addHandler(console_handler)
         self._logger.addHandler(file_handler)
+
 
     @classmethod
     def get_logger(cls) -> logging.Logger:

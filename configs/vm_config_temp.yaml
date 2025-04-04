@@ -1,46 +1,50 @@
-# PVE服务器配置
+# Proxmox Server Configuration
 proxmox:
-  host: "192.168.7.2"
+  host: "192.168.7.58"
   user: "root@pam"
-  password: "your_password"
+  password: "Gcb990217!"
   node: "pve"
-  verify_ssl: false
+  verify_ssl: false  # Disable SSL verification for self-signed certificates
 
-# 存储配置
+# Storage Configuration
 storage:
-  name: "local-lvm"
-  type: "lvmthin"
+  name: "local-lvm"  # Name of the storage pool
+  type: "lvmthin"    # Storage type: LVM thin provisioning
 
-# 虚拟机配置列表
+# Virtual Machines Configuration List
 vms:
+  # OpenWrt Router VM
   - id: 100
-    cloud_init: false  # 明确标记不使用 cloud-init
+    cloud_init: false  # Explicitly disable cloud-init
     name: "OpenWrt"
-    memory: 1024
-    cores: 2
-    sockets: 1
-    ostype: "l26"
-    scsihw: "virtio-scsi-single"
+    memory: 1024      # RAM in MB
+    cores: 2          # Number of CPU cores
+    sockets: 1        # Number of CPU sockets
+    ostype: "l26"     # OS type: Linux 2.6/3.x/4.x Kernel
+    scsihw: "virtio-scsi-single"  # SCSI controller type
+    # Network configuration: virtio driver, bridge vmbr0, firewall enabled
     net0: "virtio,bridge=vmbr0,firewall=1"
+    # Disk configuration: import from existing image
     scsi0: "local-lvm:0,import-from=/var/lib/vz/template/iso/openwrt.img"
-    boot_order:  # 新增启动顺序配置
-      - scsi0    # 首先从硬盘启动
-      - net0     # 最后是网络启动
-    tags: "network,router"
+    # Boot order: try SCSI disk first, then network
+    boot: order=scsi0,net0 
+    tags: "network,router"  # VM tags for organization
 
+  # iKuai Router VM
   - id: 101
-    cloud_init: false  # 明确标记不使用 cloud-init
+    cloud_init: false  # Explicitly disable cloud-init
     name: "Ikuai"
-    memory: 4096
-    cores: 4
-    sockets: 1
-    ostype: "l26"
-    scsihw: "virtio-scsi-single"
+    memory: 4096      # 4GB RAM
+    cores: 4          # 4 CPU cores
+    sockets: 1        # Single CPU socket
+    ostype: "l26"     # OS type: Linux 2.6/3.x/4.x Kernel
+    scsihw: "virtio-scsi-single"  # SCSI controller type
+    # Network configuration: virtio driver, bridge vmbr0, firewall enabled
     net0: "virtio,bridge=vmbr0,firewall=1"
+    # Main disk: 8GB raw format
     scsi0: "local-lvm:8,format=raw"
+    # CD-ROM drive with installation ISO
     ide2: "local:/var/lib/vz/template/iso/ikuai.iso,media=cdrom"
-    boot_order:  # 新增启动顺序配置
-      - ide2
-      - scsi0    # 首先从硬盘启动
-      - net0     # 最后是网络启动
-    tags: "network,router"
+    # Boot order: try CD-ROM first, then SCSI disk, then network
+    boot: order=ide2,scsi0,net0 
+    tags: "network,router"  # VM tags for organization
