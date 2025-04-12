@@ -37,7 +37,7 @@ vms:
     # CD-ROM drive with installation ISO
     ide2: "local:iso/ikuai.iso,media=cdrom"
     # Boot order: try CD-ROM first, then SCSI disk, then network
-    boot: order=ide2,scsi0,net0 
+    boot: "order=ide2;scsi0;net0"
     tags: "network,router"  # VM tags for organization
 
   # OpenWrt Router VM
@@ -54,5 +54,27 @@ vms:
     # Disk configuration: import from existing image
     scsi0: "local-lvm:0,import-from=/var/lib/vz/template/iso/openwrt.img"
     # Boot order: try SCSI disk first, then network
-    boot: order=scsi0,net0 
+    boot: "order=scsi0;net0"
     tags: "network,router"  # VM tags for organization
+
+  # FlyingNOS Router VM
+  - id: 120
+    cloud_init: false  # Disable cloud-init
+    name: "FNOS"
+    memory: 4096      # 2GB RAM (飞牛OS对内存要求较低)
+    cores: 4          # 2 CPU cores
+    sockets: 1        # Single CPU socket
+    ostype: "l26"     # Linux based OS
+    machine: "q35"
+    scsihw: "virtio-scsi-single"  # SCSI controller type
+    # Network configuration
+    net0: "virtio,bridge=vmbr0,firewall=1"
+    # Main disk: 4GB is enough for FlyingNOS
+    scsi0: "local-lvm:64,format=raw"
+    scsi1: "/dev/sda"
+    # CD-ROM with FlyingNOS ISO
+    ide2: "local:iso/TRIM-0.8.45-804.iso,media=cdrom"
+    # Boot order: CD-ROM first, then disk, then network
+    boot: "order=ide2;scsi0;scsi1;net0"
+    tags: "network,nas"  # VM tags
+

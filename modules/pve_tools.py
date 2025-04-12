@@ -107,15 +107,15 @@ class ProxmoxVMManager:
         # Add optional basic parameters
         optional_params = {
             'sockets', 'ostype', 'scsihw', 'cpu', 'acpi', 'ide2',
-            'scsi0', 'net0', 'net1'
+            'scsi0', 'scsi1', 'net0', 'net1', 'bios', 'machine'  # 添加 machine 到可选参数
         }
         for param in optional_params:
             if param in vm_config:
                 create_params[param] = vm_config[param]
 
         # Handle boot order
-        if 'boot_order' in vm_config:
-            create_params['boot'] = f"order={','.join(vm_config['boot_order'])}"
+        if 'boot' in vm_config:  # 支持直接指定 boot 参数
+            create_params['boot'] = vm_config['boot']
 
         # Handle cloud-init configuration
         if vm_config.get('cloud_init') and 'ci' in vm_config:
@@ -133,7 +133,7 @@ class ProxmoxVMManager:
         """Apply post-creation configuration"""
         try:
             vmid = vm_config['id']
-            
+
             # Set tags
             if 'tags' in vm_config:
                 self.proxmox.nodes(self.node).qemu(vmid).config.put(
@@ -189,7 +189,7 @@ class ProxmoxVMManager:
             # Create VM
             self.logger.info(f"Starting VM creation: {vm_config['name']} (ID: {vm_config['id']})")
             result = self.proxmox.nodes(self.node).qemu.create(**create_params)
-            
+
             if not self._wait_for_task(result):
                 return False
 
@@ -210,7 +210,7 @@ class ProxmoxVMManager:
 
         for idx, vm_config in enumerate(self.config['vms'], 1):
             self.logger.info(f"\n[{idx}/{total}] Creating VM: {vm_config['name']} (ID: {vm_config['id']})")
-            
+
             if self.create_vm(vm_config):
                 success += 1
             else:
