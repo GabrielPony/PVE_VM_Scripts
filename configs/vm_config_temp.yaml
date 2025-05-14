@@ -78,7 +78,7 @@ vms:
     boot: "order=ide2;scsi0;scsi1;net0"
     tags: "network,nas"  # VM tags
 
-  # OpenWrt Router VM
+  # Ubuntu VM
   - id: 121
     cloud_init: false  # Explicitly disable cloud-init
     name: "Ubuntu"
@@ -97,3 +97,21 @@ vms:
     boot: "order=ide2;scsi0;net0"
     tags: "network,server"  # VM tags for organization
 
+  # NixOS VM
+  - id: 122
+    cloud_init: false  # Explicitly disable cloud-init
+    name: "NixOS"
+    memory: 4096      # RAM in MB
+    cores: 8          # Number of CPU cores
+    sockets: 1        # Number of CPU sockets
+    ostype: "l26"     # OS type: Linux 2.6/3.x/4.x Kernel
+    scsihw: "virtio-scsi-single"  # SCSI controller type
+    # Network configuration: virtio driver, bridge vmbr0, firewall enabled
+    net0: "virtio,bridge=vmbr0,firewall=1"
+    # Disk configuration: import from existing image
+    scsi0: "local-lvm:128,format=raw"
+    # CD-ROM drive with installation ISO
+    ide2: "local:iso/nixos.iso,media=cdrom"
+    # Boot order: try CD-ROM first, then SCSI disk, then network
+    boot: "order=ide2;scsi0;net0"
+    tags: "network,server"  # VM tags for organization
